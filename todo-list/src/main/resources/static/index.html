@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TickTick Clone</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container" id="appContainer">
+        <!-- Sidebar: Lists -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info-bar">
+                    <div class="user-profile">
+                        <div class="avatar">M</div>
+                        <span class="username">My Tasks</span>
+                    </div>
+                    <div class="header-tools">
+                        <label class="debug-toggle" title="Testing Mode: Multi-increment">
+                            <input type="checkbox" id="debugToggle" onchange="toggleDebug(this.checked)">
+                            <span class="debug-slider"></span>
+                        </label>
+                        <button class="logout-btn" onclick="logout()" title="Logout">⏻</button>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3>Smart Lists</h3>
+                    <ul>
+                        <li id="smart-all" class="nav-item active" onclick="selectList(null, 'All Tasks')">
+                            <span class="icon">📅</span> All Tasks
+                        </li>
+                        <li id="smart-today" class="nav-item" onclick="selectList('today', 'Today')">
+                            <span class="icon">☀️</span> Today
+                        </li>
+                        <li id="smart-tomorrow" class="nav-item" onclick="selectList('tomorrow', 'Tomorrow')">
+                            <span class="icon">🌅</span> Tomorrow
+                        </li>
+                        <li id="smart-week" class="nav-item" onclick="selectList('week', 'This Week')">
+                            <span class="icon">🗓️</span> This Week
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="section-header">
+                        <h3>Lists</h3>
+                        <button class="add-list-btn" onclick="createList()">+</button>
+                    </div>
+                    <ul id="customLists">
+                        <!-- Custom lists will be loaded here -->
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Views</h3>
+                    <ul>
+                        <li class="nav-item" onclick="showTasks()">
+                            <span class="icon">✅</span> Tasks
+                        </li>
+                        <li class="nav-item" onclick="showHabitView()">
+                            <span class="icon">✨</span> Habits
+                        </li>
+                        <li class="nav-item" onclick="showLeaderboard()">
+                            <span class="icon">🏆</span> Leaderboard
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content: Task List -->
+        <main class="task-view" id="taskView">
+            <header class="task-header">
+                <h1 id="currentListName">All Tasks</h1>
+                <div class="header-actions">
+                    <button class="icon-btn">•••</button>
+                </div>
+            </header>
+
+            <div class="quick-add">
+                <div class="quick-add-container">
+                    <button class="add-icon" onclick="quickAddTask()">+</button>
+                    <input type="text" id="taskInput" placeholder="Add a task, press Enter to save.">
+                    <div class="quick-add-tools">
+                        <input type="date" id="dueDateInput" title="Due Date">
+                        <select id="priorityInput" title="Priority">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Med</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="task-list-container">
+                <ul id="todoList">
+                    <!-- Tasks go here -->
+                </ul>
+
+                <div id="completedSection" class="completed-section">
+                    <h3 onclick="toggleCompleted()">Completed <span id="completedCount">0</span></h3>
+                    <ul id="completedList" style="display:none;">
+                        <!-- Completed tasks -->
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <!-- View: Habits -->
+        <main class="habit-view" id="habitView" style="display: none;">
+            <header class="task-header">
+                <h1>My Habits ✨</h1>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="openHabitLibrary()">+</button>
+                </div>
+            </header>
+            <div class="habits-grid" id="mainHabitGrid">
+                <!-- Habits cards will be rendered here -->
+            </div>
+        </main>
+
+        <!-- View: Leaderboard -->
+        <main class="leaderboard-view" id="leaderboardView" style="display: none;">
+            <header class="task-header">
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <h1>Global Leaderboard 🏆</h1>
+                    <select id="leaderboardCategory" onchange="changeLeaderboardCategory(this.value)"
+                        style="padding:5px; border-radius:4px; max-width:200px;">
+                        <option value="overall">Overall</option>
+                        <option value="Drink Water 💧">Water Champions 💧</option>
+                        <option value="Read 30 mins 📖">Top Readers 📖</option>
+                        <option value="Exercise 🏋️">Fitness Kings 🏋️</option>
+                        <option value="Code 💻">Coding Wizards 💻</option>
+                        <option value="Meditate 🧘">Zen Masters 🧘</option>
+                    </select>
+                </div>
+                <div class="leaderboard-tabs">
+                    <button class="tab-btn active" onclick="loadRankings('day')">Day</button>
+                    <button class="tab-btn" onclick="loadRankings('week')">Week</button>
+                    <button class="tab-btn" onclick="loadRankings('month')">Month</button>
+                    <button class="tab-btn" onclick="loadRankings('all')">All Time</button>
+                </div>
+            </header>
+
+            <div class="podium-container" id="podium">
+                <!-- Top 3 rendered here -->
+            </div>
+
+            <div class="rank-list-container">
+                <ul id="rankList">
+                    <!-- Rest of users rendered here -->
+                </ul>
+            </div>
+        </main>
+
+        <!-- Right Panel: Task Details -->
+        <aside class="details-panel" id="detailsPanel">
+            <div class="details-header">
+                <div class="checkbox-large" id="detailCheckbox"></div>
+                <input type="text" id="detailTitle" class="detail-title-input" placeholder="Task Name">
+            </div>
+
+            <div class="timer-section" id="timerSection">
+                <div class="timer-display">
+                    <span id="timerText">00:00:00</span>
+                    <div class="timer-controls">
+                        <button id="timerBtn" onclick="toggleTimer()" title="Start/Stop Timer">▶</button>
+                        <button id="resetTimerBtn" onclick="resetTimer()" title="Reset Timer">↺</button>
+                    </div>
+                </div>
+                <div class="timer-total">Total time spent: <span id="totalTimeText">0h 0m</span></div>
+            </div>
+
+            <div class="details-body">
+                <div class="detail-row">
+                    <label>Due Date</label>
+                    <input type="date" id="detailDueDate">
+                </div>
+
+                <div class="detail-row">
+                    <label>Priority</label>
+                    <select id="detailPriority">
+                        <option value="LOW" class="badge LOW">Low</option>
+                        <option value="MEDIUM" class="badge MEDIUM">Medium</option>
+                        <option value="HIGH" class="badge HIGH">High</option>
+                    </select>
+                </div>
+
+                <div class="detail-row">
+                    <label>List</label>
+                    <select id="detailListSelect"></select>
+                </div>
+
+                <div class="detail-notes">
+                    <textarea id="detailDescription" placeholder="Add notes here..."></textarea>
+                </div>
+            </div>
+
+            <div class="details-footer">
+                <button class="delete-task-btn" onclick="deleteCurrentTask()">Delete Task</button>
+                <div class="timestamp">Created 2 mins ago</div>
+            </div>
+        </aside>
+
+        <!-- Modal: Habit Library -->
+        <div id="habitModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeHabitLibrary()">&times;</span>
+                <h2>Habit Library 📚</h2>
+                <div class="common-habits-grid">
+                    <div class="habit-card" onclick="addCommonHabit('Drink Water 💧')">
+                        <div class="emoji">💧</div>
+                        <h3>Drink Water</h3>
+                    </div>
+                    <div class="habit-card" onclick="addCommonHabit('Read 30 mins 📖')">
+                        <div class="emoji">📖</div>
+                        <h3>Read 30 mins</h3>
+                    </div>
+                    <div class="habit-card" onclick="addCommonHabit('Exercise 🏋️')">
+                        <div class="emoji">🏋️</div>
+                        <h3>Exercise</h3>
+                    </div>
+                    <div class="habit-card" onclick="addCommonHabit('Code 💻')">
+                        <div class="emoji">💻</div>
+                        <h3>Code</h3>
+                    </div>
+                    <div class="habit-card" onclick="addCommonHabit('Meditate 🧘')">
+                        <div class="emoji">🧘</div>
+                        <h3>Meditate</h3>
+                    </div>
+                    <div class="habit-card add-custom" onclick="createHabit()">
+                        <div class="emoji">➕</div>
+                        <h3>Create Custom</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>

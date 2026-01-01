@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TickTick Clone</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <h2 id="authTitle">Welcome Back</h2>
+            <input type="text" id="usernameInput" placeholder="Username" class="auth-input">
+            <input type="password" id="passwordInput" placeholder="Password" class="auth-input">
+            <button class="auth-btn" onclick="handleAuth()">Login</button>
+            <p class="auth-switch">
+                <span id="switchText">New here? </span>
+                <span id="switchAction" onclick="toggleAuthMode()">Sign Up</span>
+            </p>
+        </div>
+    </div>
+    <script>
+        const API_USERS = '/api/users';
+        let isLoginMode = true;
+
+        if (localStorage.getItem('currentUser')) {
+            window.location.href = 'index.html';
+        }
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').innerText = isLoginMode ? 'Welcome Back' : 'Create Account';
+            document.getElementById('switchText').innerText = isLoginMode ? 'New here? ' : 'Already have an account? ';
+            document.getElementById('switchAction').innerText = isLoginMode ? 'Sign Up' : 'Login';
+            document.querySelector('.auth-btn').innerText = isLoginMode ? 'Login' : 'Sign Up';
+        }
+
+        async function handleAuth() {
+            const user = document.getElementById('usernameInput').value;
+            const pass = document.getElementById('passwordInput').value;
+
+            if (!user || !pass) {
+                alert("Please fill all fields");
+                return;
+            }
+
+            const endpoint = isLoginMode ? '/login' : '/register';
+
+            try {
+                const res = await fetch(`${API_USERS}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                if (!res.ok) throw new Error("Auth failed");
+
+                const data = await res.json();
+                if (data && data.id) {
+                    localStorage.setItem('currentUser', JSON.stringify(data));
+                    window.location.href = 'index.html';
+                } else {
+                    alert("Login failed");
+                }
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+    </script>
+</body>
+
+</html>
