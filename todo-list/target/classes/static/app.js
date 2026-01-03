@@ -121,8 +121,10 @@ function logout() {
 }
 
 // --- LOADERS ---
+// --- LOADERS ---
 async function loadLists() {
-    const res = await fetch(API.lists);
+    if (!currentUser) return;
+    const res = await fetch(`${API.lists}?userId=${currentUser.id}`);
     allLists = await res.json();
     renderLists();
     populateListSelect();
@@ -134,6 +136,9 @@ async function loadTasks() {
     allTasks = await res.json();
     renderTasks();
 }
+
+// ... (renderLeaderboard)
+// ... (renderLeaderboard removed)
 
 async function loadHabits() {
     if (!currentUser) return;
@@ -157,11 +162,15 @@ function renderHabits() {
     allHabits.forEach(h => {
         const card = document.createElement('div');
         card.className = 'habit-card';
+        // Extract emoji from name if present (simple heuristic) or default
+        // For now just use the name as is
         card.innerHTML = `
-            <div class="habit-icon">✨</div>
-            <div class="habit-name">${h.name}</div>
+            <div class="habit-emoji">✨</div>
+            <div class="habit-title">${h.name}</div>
             <div class="habit-streak">🔥 ${h.streak} day streak</div>
-            <button class="habit-check-btn" onclick="incrementHabit(${h.id})">✔</button>
+            <button class="check-btn-large" onclick="incrementHabit(${h.id})">
+                <ion-icon name="checkmark-circle-outline" style="font-size:18px; vertical-align:middle;"></ion-icon> Check In
+            </button>
         `;
         container.appendChild(card);
     });
@@ -173,14 +182,15 @@ function renderLists() {
     container.innerHTML = '';
 
     allLists.forEach(list => {
-        const li = document.createElement('li');
-        li.className = 'nav-item';
+        const div = document.createElement('div');
+        div.className = 'nav-item';
         if (currentFilter.type === 'list' && currentFilter.value === list.id) {
-            li.classList.add('active');
+            div.classList.add('active');
         }
-        li.innerHTML = `<span class="icon" style="color:${list.color}">●</span> ${list.name}`;
-        li.onclick = () => selectList(list.id, list.name);
-        container.appendChild(li);
+        // Using a generic list icon with the list's color
+        div.innerHTML = `<ion-icon name="list-outline" class="icon" style="color:${list.color || '#6366f1'}"></ion-icon> ${list.name}`;
+        div.onclick = () => selectList(list.id, list.name);
+        container.appendChild(div);
     });
 }
 
@@ -194,22 +204,37 @@ function renderTasks() {
     todoList.innerHTML = '';
     completedList.innerHTML = '';
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
+    // Fix Date Logic: Use Local Time for YYYY-MM-DD
+    const getLocalISOString = (date) => {
+        const offset = date.getTimezoneOffset() * 60000; // offset in milliseconds
+        const localTime = new Date(date.getTime() - offset);
+        return localTime.toISOString().split('T')[0];
+    };
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const todayDate = new Date();
+    const todayStr = getLocalISOString(todayDate);
 
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(today.getDate() + 7);
+    const tomorrowDate = new Date();
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrowStr = getLocalISOString(tomorrowDate);
 
+    const nextWeekDate = new Date();
+    nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+    const nextWeekStr = getLocalISOString(nextWeekDate);
+
+    // Filter Logic
     let filteredTasks = allTasks.filter(t => {
         if (currentFilter.type === 'list') {
             return String(t.taskListId) === String(currentFilter.value);
         }
         if (currentFilter.type === 'smart') {
+            if (!t.dueDate) {
+                // For smart views (Time-based), if no due date, maybe exclude? 
+                // Depends on logic. "All Tasks" includes everything.
+                if (currentFilter.value === 'all') return true;
+                return false; // Today/Tomorrow/Week require a date
+            }
+
             if (currentFilter.value === 'today') {
                 return t.dueDate === todayStr;
             }
@@ -217,11 +242,9 @@ function renderTasks() {
                 return t.dueDate === tomorrowStr;
             }
             if (currentFilter.value === 'week') {
-                if (!t.dueDate) return false;
-                const d = new Date(t.dueDate);
-                return d >= today && d <= endOfWeek;
+                return t.dueDate >= todayStr && t.dueDate <= nextWeekStr;
             }
-            return true;
+            if (currentFilter.value === 'all') return true;
         }
         return true;
     });
@@ -241,36 +264,44 @@ function renderTasks() {
 }
 
 function createTaskElement(task) {
-    const li = document.createElement('li');
-    li.dataset.id = task.id;
-    li.className = `priority-${task.priority || 'LOW'}`;
-    if (task.completed) li.classList.add('completed');
-    if (task.id === selectedTaskId) li.classList.add('active');
+    const div = document.createElement('div');
+    div.dataset.id = task.id;
+    div.className = 'task-item';
+    if (task.completed) div.classList.add('completed');
+    if (task.id === selectedTaskId) div.classList.add('active');
 
-    li.onclick = () => selectTask(task);
+    // Priority Border/Indicator logic if needed, currently using chips
+    // const priorityColor = task.priority === 'HIGH' ? 'var(--danger)' : task.priority === 'MEDIUM' ? 'var(--warning)' : 'var(--info)';
+    // div.style.borderLeft = `4px solid ${priorityColor}`;
 
-    const today = new Date().toISOString().split('T')[0];
+    div.onclick = () => selectTask(task);
+
+    const today = new Date();
+    const offset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - offset).toISOString().split('T')[0];
+
     let dateClass = '';
     if (task.dueDate) {
-        if (task.dueDate < today && !task.completed) dateClass = 'overdue';
-        else if (task.dueDate === today) dateClass = 'today';
+        if (task.dueDate < todayStr && !task.completed) dateClass = 'text-danger'; // Overdue
+        else if (task.dueDate === todayStr) dateClass = 'text-warning'; // Due Today
     }
 
     const displayDate = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '';
+    const priorityClass = `priority-${(task.priority || 'LOW').toLowerCase()}`;
 
-    li.innerHTML = `
-        <div class="main-checkbox ${task.completed ? 'checked' : ''}" 
+    div.innerHTML = `
+        <div class="checkbox ${task.completed ? 'checked' : ''}" 
              onclick="toggleTaskStatus(event, ${task.id}, ${!task.completed})"></div>
-        <div class="task-content">
-            <div class="task-title">${task.task}</div>
+        <div class="task-info">
+            <div class="task-text">${task.task}</div>
             <div class="task-meta">
-                ${displayDate ? `<span class="task-date ${dateClass}">📅 ${displayDate}</span>` : ''}
-                <span class="badge ${task.priority}">${task.priority}</span>
-                ${task.timeSpent > 0 ? `<span class="time-spent">⏱️ ${formatTime(task.timeSpent)}</span>` : ''}
+                ${displayDate ? `<span><ion-icon name="calendar-outline" style="vertical-align:middle"></ion-icon> ${displayDate}</span>` : ''}
+                <span class="meta-chip ${priorityClass}">${task.priority}</span>
+                ${task.timeSpent > 0 ? `<span><ion-icon name="time-outline" style="vertical-align:middle"></ion-icon> ${formatTotalTime(task.timeSpent)}</span>` : ''}
             </div>
         </div>
     `;
-    return li;
+    return div;
 }
 
 // --- ACTIONS ---
@@ -296,10 +327,11 @@ function selectList(id, name) {
     renderTasks();
 }
 
+let activeTimerTaskId = null; // Track which task has the running timer
+
 function selectTask(task) {
-    if (isTimerRunning) {
-        saveTimer();
-    }
+    // User requested NOT to stop timer on switch.
+    // So we just switch the view.
     selectedTaskId = task.id;
     renderTasks();
     loadTaskDetails(task);
@@ -320,56 +352,117 @@ function loadTaskDetails(task) {
     const listSelect = document.getElementById('detailListSelect');
     if (listSelect) listSelect.value = task.taskListId || '';
 
-    // Init timer display
-    currentSeconds = 0;
-    isTimerRunning = false;
-    document.getElementById('timerText').innerText = "00:00:00";
-    document.getElementById('timerBtn').innerText = "▶";
-    document.getElementById('totalTimeText').innerText = formatTotalTime(task.timeSpent || 0);
+    // Timer UI Update
+    updateTimerUI(task);
+}
 
-    if (timerInterval) clearInterval(timerInterval);
+function updateTimerUI(task) {
+    if (!task) return;
+    const isThisTaskRunning = activeTimerTaskId === task.id;
+
+    document.getElementById('timerBtn').innerText = isThisTaskRunning ? "■" : "▶";
+
+    // If this task is running, currentSeconds is live. 
+    // If not, we should show its stored timeSpent.
+    // BUT wait, if we switch AWAY and back, currentSeconds is correct for the RUNNING task.
+    // If we view a NON-RUNNING task, we show its stored timeSpent.
+
+    if (isThisTaskRunning) {
+        document.getElementById('timerText').innerText = formatTime(currentSeconds);
+    } else {
+        document.getElementById('timerText').innerText = "00:00:00"; // Or show static time? 
+        // Usually a timer is for a session. Total time is separate.
+    }
+    document.getElementById('totalTimeText').innerText = formatTotalTime(task.timeSpent || 0);
 }
 
 // --- TIMER LOGIC ---
 function toggleTimer() {
     const btn = document.getElementById('timerBtn');
-    if (!isTimerRunning) {
-        isTimerRunning = true;
-        btn.innerText = "■";
-        timerInterval = setInterval(() => {
-            currentSeconds++;
-            document.getElementById('timerText').innerText = formatTime(currentSeconds);
-        }, 1000);
-    } else {
+
+    if (activeTimerTaskId === selectedTaskId) {
+        // Stop current
         saveTimer();
+    } else {
+        // Start new (or switch)
+        if (activeTimerTaskId !== null) {
+            // Stop previous running task first
+            saveTimer(activeTimerTaskId); // Need to handle saving a task that isn't selected
+        }
+        startTimerFor(selectedTaskId);
     }
 }
 
-function saveTimer() {
-    if (!selectedTaskId) return;
+function startTimerFor(taskId) {
+    activeTimerTaskId = taskId;
+    isTimerRunning = true;
+    currentSeconds = 0;
+
+    // UI update
+    document.getElementById('timerBtn').innerText = "■";
+
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        currentSeconds++;
+        // Identify which task is being timed
+        // Only update UI if we are LOOKING at that task
+        if (selectedTaskId === activeTimerTaskId) {
+            document.getElementById('timerText').innerText = formatTime(currentSeconds);
+            // We could also live-update total time? Maybe overkill/complex
+        }
+    }, 1000);
+}
+
+// Overloaded saveTimer to allow saving a background task
+async function saveTimer(taskIdOverride = null) {
+    const targetId = taskIdOverride || selectedTaskId;
+    if (!targetId) return;
+
+    // Use currentSeconds
+    const secondsToAdd = currentSeconds;
+
+    // Reset State
     isTimerRunning = false;
-    document.getElementById('timerBtn').innerText = "▶";
+    activeTimerTaskId = null;
+    currentSeconds = 0;
     if (timerInterval) clearInterval(timerInterval);
 
-    const task = allTasks.find(t => t.id === selectedTaskId);
-    if (task) {
-        task.timeSpent = (task.timeSpent || 0) + currentSeconds;
-        currentSeconds = 0;
+    // If we are looking at the task we just stopped
+    if (selectedTaskId === targetId) {
+        document.getElementById('timerBtn').innerText = "▶";
         document.getElementById('timerText').innerText = "00:00:00";
-        document.getElementById('totalTimeText').innerText = formatTotalTime(task.timeSpent);
-        renderTasks();
-        saveTaskDetail('timeSpent', task.timeSpent);
+    }
+
+    const task = allTasks.find(t => t.id === targetId);
+    if (task) {
+        task.timeSpent = (task.timeSpent || 0) + secondsToAdd;
+
+        // Update Total Time UI if we are looking at it
+        if (selectedTaskId === targetId) {
+            document.getElementById('totalTimeText').innerText = formatTotalTime(task.timeSpent);
+        }
+
+        renderTasks(); // Update list view (if we have time indicators there)
+
+        // Persist
+        await fetch(`${API.todos}/${targetId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...task, timeSpent: task.timeSpent }) // minimal update? no send full object
+        });
     }
 }
 
 function resetTimer() {
-    if (isTimerRunning) {
+    // Only reset if we are looking at the active timer?
+    if (selectedTaskId === activeTimerTaskId) {
         isTimerRunning = false;
-        document.getElementById('timerBtn').innerText = "▶";
+        activeTimerTaskId = null;
         if (timerInterval) clearInterval(timerInterval);
+        currentSeconds = 0;
+        document.getElementById('timerText').innerText = "00:00:00";
+        document.getElementById('timerBtn').innerText = "▶";
     }
-    currentSeconds = 0;
-    document.getElementById('timerText').innerText = "00:00:00";
 }
 
 function formatTime(totalSeconds) {
@@ -451,8 +544,8 @@ async function quickAddTask() {
         renderTasks();
         input.value = '';
 
-        const firstItem = document.querySelector('.task-list-container li');
-        if (firstItem) firstItem.classList.add('new-item');
+        const firstItem = document.querySelector('#todoList .task-item');
+        if (firstItem) firstItem.style.animation = 'slideUp 0.5s ease forwards'; // force animation restart or logic
     } catch (e) {
         console.error("Failed to add task", e);
     }
@@ -486,7 +579,7 @@ async function createList() {
         const res = await fetch(API.lists, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, color })
+            body: JSON.stringify({ name, color, userId: currentUser.id })
         });
         const newList = await res.json();
         allLists.push(newList);
@@ -566,37 +659,66 @@ function changeLeaderboardCategory(val) {
     loadRankings(timeframe);
 }
 
+// --- LEADERBOARD RENDER ---
+// --- LEADERBOARD RENDER ---
 function renderLeaderboard(rankings) {
     const podiumEl = document.getElementById('podium');
     const listEl = document.getElementById('rankList');
     podiumEl.innerHTML = '';
-    listEl.innerHTML = '';
+
+    // Header for table
+    listEl.innerHTML = `
+        <div class="leaderboard-header">
+            <span style="width:40px; text-align:center;">#</span>
+            <span style="flex:1; padding-left:16px;">User</span>
+            <span style="width:80px; text-align:right;">Score</span>
+        </div>
+        <div class="leaderboard-body" id="leaderboardBody"></div>
+    `;
+    const bodyEl = document.getElementById('leaderboardBody');
 
     const top3 = rankings.slice(0, 3);
-    const rest = rankings.slice(3);
+    // Use ALL rankings for the table list as requested, not just 'rest'
+    const fullList = rankings;
 
     const podiumOrder = [top3[1], top3[0], top3[2]].filter(u => u);
-    podiumOrder.forEach(u => {
-        const rank = rankings.indexOf(u) + 1;
+    const medals = ['🥈', '🥇', '🥉'];
+    const ranks = [2, 1, 3];
+
+    podiumOrder.forEach((u, idx) => {
+        // Correct rank mapping: if current is top3[1] (2nd place), rank is 2.
+        // top3[0] is 1st. top3[2] is 3rd.
+        // We need to find the actual rank of 'u' in 'top3'.
+        const realRank = top3.indexOf(u) + 1;
+
         const div = document.createElement('div');
-        div.className = `podium-step podium-rank-${rank}`;
+        div.className = `podium-step podium-rank-${realRank}`;
         div.innerHTML = `
+            <div class="podium-top-label">TOP ${realRank}</div>
             <div class="podium-avatar">${u.username.charAt(0).toUpperCase()}</div>
-            <div class="podium-name">${u.username}</div>
-            <div class="podium-bar"><span>${u.score}</span></div>
+            <div class="podium-name" title="${u.username}">${u.username}</div>
+            <div class="podium-bar">
+                <span>${u.score}</span>
+            </div>
         `;
         podiumEl.appendChild(div);
     });
 
-    rest.forEach((u, i) => {
-        const li = document.createElement('li');
-        li.className = 'rank-item';
-        li.innerHTML = `
-            <span class="rank-idx">#${i + 4}</span>
-            <span class="rank-user">${u.username}</span>
-            <span class="rank-score">${u.score} pts</span>
+    // Table Logic: Show ALL users
+    fullList.forEach((u, i) => {
+        const row = document.createElement('div');
+        row.className = 'leaderboard-row';
+        if (i < 3) {
+            row.style.background = '#fff8e1'; // Highlight top 3 slightly in table
+        }
+        row.innerHTML = `
+            <span class="rank-idx" style="width:40px; text-align:center;">${i + 1}</span>
+            <span class="rank-user" style="flex:1; padding-left:16px;">
+                ${u.username} ${i < 3 ? '🏆' : ''}
+            </span>
+            <span class="rank-score" style="width:80px; text-align:right;">${u.score}</span>
         `;
-        listEl.appendChild(li);
+        bodyEl.appendChild(row);
     });
 }
 

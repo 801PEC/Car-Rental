@@ -5,241 +5,263 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TickTick Clone</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Modern Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Ionicons for better icons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
 
 <body>
     <div class="app-container" id="appContainer">
-        <!-- Sidebar: Lists -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="user-info-bar">
-                    <div class="user-profile">
-                        <div class="avatar">M</div>
-                        <span class="username">My Tasks</span>
-                    </div>
-                    <div class="header-tools">
-                        <label class="debug-toggle" title="Testing Mode: Multi-increment">
-                            <input type="checkbox" id="debugToggle" onchange="toggleDebug(this.checked)">
-                            <span class="debug-slider"></span>
-                        </label>
-                        <button class="logout-btn" onclick="logout()" title="Logout">⏻</button>
-                    </div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar glass-panel">
+            <div class="user-profile">
+                <div class="avatar">M</div>
+                <div style="flex:1">
+                    <div class="username">My Tasks</div>
+                    <div style="font-size:11px; color:var(--text-muted); font-weight:500;">Pro Plan</div>
                 </div>
+                <!-- Hidden Debug Toggle for Power Users -->
+                <label class="debug-toggle" style="opacity:0; width:10px; height:10px; overflow:hidden;">
+                    <input type="checkbox" id="debugToggle" onchange="toggleDebug(this.checked)">
+                </label>
+                <button class="logout-btn" onclick="logout()" title="Logout"
+                    style="border:none; background:transparent; cursor:pointer;">
+                    <ion-icon name="log-out-outline" style="font-size:20px; color:var(--text-light);"></ion-icon>
+                </button>
             </div>
 
             <nav class="sidebar-nav">
                 <div class="nav-section">
-                    <h3>Smart Lists</h3>
-                    <ul>
-                        <li id="smart-all" class="nav-item active" onclick="selectList(null, 'All Tasks')">
-                            <span class="icon">📅</span> All Tasks
-                        </li>
-                        <li id="smart-today" class="nav-item" onclick="selectList('today', 'Today')">
-                            <span class="icon">☀️</span> Today
-                        </li>
-                        <li id="smart-tomorrow" class="nav-item" onclick="selectList('tomorrow', 'Tomorrow')">
-                            <span class="icon">🌅</span> Tomorrow
-                        </li>
-                        <li id="smart-week" class="nav-item" onclick="selectList('week', 'This Week')">
-                            <span class="icon">🗓️</span> This Week
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="nav-section">
-                    <div class="section-header">
-                        <h3>Lists</h3>
-                        <button class="add-list-btn" onclick="createList()">+</button>
+                    <h3>Focus</h3>
+                    <div id="smart-all" class="nav-item active" onclick="selectList(null, 'All Tasks')">
+                        <ion-icon name="albums-outline" class="icon"></ion-icon> All Tasks
                     </div>
-                    <ul id="customLists">
-                        <!-- Custom lists will be loaded here -->
-                    </ul>
+                    <div id="smart-today" class="nav-item" onclick="selectList('today', 'Today')">
+                        <ion-icon name="sunny-outline" class="icon" style="color:#f59e0b"></ion-icon> Today
+                    </div>
+                    <div id="smart-tomorrow" class="nav-item" onclick="selectList('tomorrow', 'Tomorrow')">
+                        <ion-icon name="partly-sunny-outline" class="icon" style="color:#8b5cf6"></ion-icon> Tomorrow
+                    </div>
+                    <div id="smart-week" class="nav-item" onclick="selectList('week', 'This Week')">
+                        <ion-icon name="calendar-outline" class="icon" style="color:#3b82f6"></ion-icon> Next 7 Days
+                    </div>
                 </div>
 
                 <div class="nav-section">
-                    <h3>Views</h3>
-                    <ul>
-                        <li class="nav-item" onclick="showTasks()">
-                            <span class="icon">✅</span> Tasks
-                        </li>
-                        <li class="nav-item" onclick="showHabitView()">
-                            <span class="icon">✨</span> Habits
-                        </li>
-                        <li class="nav-item" onclick="showLeaderboard()">
-                            <span class="icon">🏆</span> Leaderboard
-                        </li>
-                    </ul>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding-right:12px;">
+                        <h3>Lists</h3>
+                        <div onclick="createList()" style="cursor:pointer; font-size:16px; color:var(--text-muted)">+
+                        </div>
+                    </div>
+                    <div id="customLists">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Apps</h3>
+                    <div class="nav-item" onclick="showTasks()">
+                        <ion-icon name="checkbox-outline" class="icon"></ion-icon> Tasks
+                    </div>
+                    <div class="nav-item" onclick="showHabitView()">
+                        <ion-icon name="leaf-outline" class="icon" style="color:#10b981"></ion-icon> Habits
+                    </div>
+                    <div class="nav-item" onclick="showLeaderboard()">
+                        <ion-icon name="trophy-outline" class="icon" style="color:#fbbf24"></ion-icon> Leaderboard
+                    </div>
                 </div>
             </nav>
         </aside>
 
-        <!-- Main Content: Task List -->
-        <main class="task-view" id="taskView">
-            <header class="task-header">
+        <!-- Main Content (Tasks) -->
+        <main class="main-content glass-panel" id="taskView">
+            <header class="glass-header">
                 <h1 id="currentListName">All Tasks</h1>
                 <div class="header-actions">
-                    <button class="icon-btn">•••</button>
+                    <ion-icon name="ellipsis-horizontal"
+                        style="font-size:24px; color:var(--text-light); cursor:pointer;"></ion-icon>
                 </div>
             </header>
 
-            <div class="quick-add">
-                <div class="quick-add-container">
-                    <button class="add-icon" onclick="quickAddTask()">+</button>
-                    <input type="text" id="taskInput" placeholder="Add a task, press Enter to save.">
-                    <div class="quick-add-tools">
-                        <input type="date" id="dueDateInput" title="Due Date">
-                        <select id="priorityInput" title="Priority">
+            <div class="quick-add-wrapper">
+                <div class="quick-add-bar">
+                    <button class="add-btn" onclick="quickAddTask()">
+                        <ion-icon name="add"></ion-icon>
+                    </button>
+                    <input type="text" id="taskInput" placeholder="I want to...">
+                    <div class="quick-actions">
+                        <input type="date" id="dueDateInput" class="quick-input">
+                        <select id="priorityInput" class="quick-input">
                             <option value="LOW">Low</option>
-                            <option value="MEDIUM">Med</option>
+                            <option value="MEDIUM">Medium</option>
                             <option value="HIGH">High</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            <div class="task-list-container">
-                <ul id="todoList">
-                    <!-- Tasks go here -->
-                </ul>
-
-                <div id="completedSection" class="completed-section">
-                    <h3 onclick="toggleCompleted()">Completed <span id="completedCount">0</span></h3>
-                    <ul id="completedList" style="display:none;">
-                        <!-- Completed tasks -->
-                    </ul>
+            <div class="task-scroll-area">
+                <div id="todoList">
+                    <!-- Tasks Render Here -->
                 </div>
-            </div>
-        </main>
 
-        <!-- View: Habits -->
-        <main class="habit-view" id="habitView" style="display: none;">
-            <header class="task-header">
-                <h1>My Habits ✨</h1>
-                <div class="header-actions">
-                    <button class="icon-btn" onclick="openHabitLibrary()">+</button>
-                </div>
-            </header>
-            <div class="habits-grid" id="mainHabitGrid">
-                <!-- Habits cards will be rendered here -->
-            </div>
-        </main>
-
-        <!-- View: Leaderboard -->
-        <main class="leaderboard-view" id="leaderboardView" style="display: none;">
-            <header class="task-header">
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <h1>Global Leaderboard 🏆</h1>
-                    <select id="leaderboardCategory" onchange="changeLeaderboardCategory(this.value)"
-                        style="padding:5px; border-radius:4px; max-width:200px;">
-                        <option value="overall">Overall</option>
-                        <option value="Drink Water 💧">Water Champions 💧</option>
-                        <option value="Read 30 mins 📖">Top Readers 📖</option>
-                        <option value="Exercise 🏋️">Fitness Kings 🏋️</option>
-                        <option value="Code 💻">Coding Wizards 💻</option>
-                        <option value="Meditate 🧘">Zen Masters 🧘</option>
-                    </select>
-                </div>
-                <div class="leaderboard-tabs">
-                    <button class="tab-btn active" onclick="loadRankings('day')">Day</button>
-                    <button class="tab-btn" onclick="loadRankings('week')">Week</button>
-                    <button class="tab-btn" onclick="loadRankings('month')">Month</button>
-                    <button class="tab-btn" onclick="loadRankings('all')">All Time</button>
-                </div>
-            </header>
-
-            <div class="podium-container" id="podium">
-                <!-- Top 3 rendered here -->
-            </div>
-
-            <div class="rank-list-container">
-                <ul id="rankList">
-                    <!-- Rest of users rendered here -->
-                </ul>
-            </div>
-        </main>
-
-        <!-- Right Panel: Task Details -->
-        <aside class="details-panel" id="detailsPanel">
-            <div class="details-header">
-                <div class="checkbox-large" id="detailCheckbox"></div>
-                <input type="text" id="detailTitle" class="detail-title-input" placeholder="Task Name">
-            </div>
-
-            <div class="timer-section" id="timerSection">
-                <div class="timer-display">
-                    <span id="timerText">00:00:00</span>
-                    <div class="timer-controls">
-                        <button id="timerBtn" onclick="toggleTimer()" title="Start/Stop Timer">▶</button>
-                        <button id="resetTimerBtn" onclick="resetTimer()" title="Reset Timer">↺</button>
+                <div id="completedSection" style="margin-top:40px;">
+                    <h2 class="section-title" onclick="toggleCompleted()" style="cursor:pointer;">
+                        Completed <span id="completedCount"
+                            style="margin-left:8px; font-weight:400; font-size:12px; opacity:0.7;">0</span>
+                    </h2>
+                    <div id="completedList" style="display:none;">
+                        <!-- Completed Tasks -->
                     </div>
                 </div>
-                <div class="timer-total">Total time spent: <span id="totalTimeText">0h 0m</span></div>
+            </div>
+        </main>
+
+        <!-- Main Content (Habits) -->
+        <main class="main-content glass-panel" id="habitView" style="display: none;">
+            <header class="glass-header">
+                <h1>My Habits</h1>
+                <button class="add-btn" onclick="openHabitLibrary()"
+                    style="width:auto; padding:0 16px; height:36px; border-radius:12px; font-size:14px; font-weight:600;">
+                    + New Habit
+                </button>
+            </header>
+            <div class="habits-container" id="mainHabitGrid">
+                <!-- Habits -->
+            </div>
+        </main>
+
+        <!-- Main Content (Leaderboard) -->
+        <main class="main-content glass-panel" id="leaderboardView" style="display: none;">
+            <header class="glass-header" style="flex-direction:column; align-items:flex-start; gap:12px;">
+                <h1>Leaderboard 🏆</h1>
+                <div style="display:flex; gap:12px; width:100%;">
+                    <select id="leaderboardCategory" onchange="changeLeaderboardCategory(this.value)"
+                        class="quick-input" style="width:200px;">
+                        <option value="overall">Overall Score</option>
+                        <option value="Drink Water 💧">Water Champions</option>
+                        <option value="Read 30 mins 📖">Top Readers</option>
+                        <option value="Exercise 🏋️">Fitness Kings</option>
+                    </select>
+                    <div class="leaderboard-tabs" style="margin-left:auto; display:flex; gap:8px;">
+                        <button class="tab-btn active quick-input" onclick="loadRankings('day')">Day</button>
+                        <button class="tab-btn quick-input" onclick="loadRankings('week')">Week</button>
+                        <button class="tab-btn quick-input" onclick="loadRankings('month')">Month</button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="leaderboard-wrapper">
+                <div class="podium" id="podium">
+                    <!-- Podium -->
+                </div>
+                <div class="rank-list">
+                    <div id="rankList">
+                        <!-- List -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Details Panel -->
+        <aside class="details-panel" id="detailsPanel" style="visibility:hidden">
+            <div class="detail-header">
+                <div style="display:flex; justify-content:space-between; margin-bottom:16px;">
+                    <div class="checkbox" id="detailCheckbox"
+                        style="border-color:var(--text-muted); color:var(--primary);"></div>
+                    <ion-icon name="trash-outline" class="interactive-icon" onclick="deleteCurrentTask()"
+                        style="color:var(--danger); cursor:pointer; font-size:20px;"></ion-icon>
+                </div>
+                <input type="text" id="detailTitle" class="detail-input-title" placeholder="Task Name">
             </div>
 
-            <div class="details-body">
-                <div class="detail-row">
+            <div class="timer-widget" id="timerSection">
+                <div class="timer-time" id="timerText">00:00:00</div>
+                <div style="display:flex; gap:16px; justify-content:center;">
+                    <button class="timer-btn" id="timerBtn" onclick="toggleTimer()">
+                        <ion-icon name="play"></ion-icon>
+                    </button>
+                    <button class="timer-btn" id="resetTimerBtn" onclick="resetTimer()"
+                        style="background:rgba(255,255,255,0.2); color:white;">
+                        <ion-icon name="refresh"></ion-icon>
+                    </button>
+                </div>
+                <div style="margin-top:12px; font-size:12px; opacity:0.8;">Total: <span id="totalTimeText">0h 0m</span>
+                </div>
+            </div>
+
+            <div class="details-grid">
+                <div class="detail-group">
                     <label>Due Date</label>
-                    <input type="date" id="detailDueDate">
+                    <input type="date" id="detailDueDate" class="detail-control">
                 </div>
 
-                <div class="detail-row">
+                <div class="detail-group">
                     <label>Priority</label>
-                    <select id="detailPriority">
-                        <option value="LOW" class="badge LOW">Low</option>
-                        <option value="MEDIUM" class="badge MEDIUM">Medium</option>
-                        <option value="HIGH" class="badge HIGH">High</option>
+                    <select id="detailPriority" class="detail-control">
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
                     </select>
                 </div>
 
-                <div class="detail-row">
+                <div class="detail-group">
                     <label>List</label>
-                    <select id="detailListSelect"></select>
+                    <select id="detailListSelect" class="detail-control"></select>
                 </div>
 
-                <div class="detail-notes">
-                    <textarea id="detailDescription" placeholder="Add notes here..."></textarea>
+                <div class="detail-group">
+                    <label>Notes</label>
+                    <textarea id="detailDescription" class="detail-control" placeholder="Add details..."></textarea>
                 </div>
             </div>
 
-            <div class="details-footer">
-                <button class="delete-task-btn" onclick="deleteCurrentTask()">Delete Task</button>
-                <div class="timestamp">Created 2 mins ago</div>
+            <div style="margin-top:auto; padding-top:20px; font-size:11px; color:var(--text-light); text-align:center;">
+                Created 2 mins ago
             </div>
         </aside>
 
         <!-- Modal: Habit Library -->
-        <div id="habitModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeHabitLibrary()">&times;</span>
-                <h2>Habit Library 📚</h2>
-                <div class="common-habits-grid">
-                    <div class="habit-card" onclick="addCommonHabit('Drink Water 💧')">
-                        <div class="emoji">💧</div>
-                        <h3>Drink Water</h3>
-                    </div>
-                    <div class="habit-card" onclick="addCommonHabit('Read 30 mins 📖')">
-                        <div class="emoji">📖</div>
-                        <h3>Read 30 mins</h3>
-                    </div>
-                    <div class="habit-card" onclick="addCommonHabit('Exercise 🏋️')">
-                        <div class="emoji">🏋️</div>
-                        <h3>Exercise</h3>
-                    </div>
-                    <div class="habit-card" onclick="addCommonHabit('Code 💻')">
-                        <div class="emoji">💻</div>
-                        <h3>Code</h3>
-                    </div>
-                    <div class="habit-card" onclick="addCommonHabit('Meditate 🧘')">
-                        <div class="emoji">🧘</div>
-                        <h3>Meditate</h3>
-                    </div>
-                    <div class="habit-card add-custom" onclick="createHabit()">
-                        <div class="emoji">➕</div>
-                        <h3>Create Custom</h3>
-                    </div>
+        <div id="habitModal"
+            style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); z-index:100;">
+            <div class="glass-panel"
+                style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:500px; padding:32px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                    <h2 style="font-size:24px;">Add Habit</h2>
+                    <ion-icon name="close" onclick="closeHabitLibrary()"
+                        style="font-size:24px; cursor:pointer"></ion-icon>
+                </div>
+                <div class="habits-container" style="max-height:400px; padding:0; box-shadow:none;">
+                    <!-- Common Habits Rendered Here (hardcoded for now as quick action) -->
+                    <button class="habit-card" onclick="addCommonHabit('Drink Water 💧')"
+                        style="width:100%; margin-bottom:10px; display:flex; align-items:center; gap:16px;">
+                        <span style="font-size:24px;">💧</span> Drink Water
+                    </button>
+                    <button class="habit-card" onclick="addCommonHabit('Read 30 mins 📖')"
+                        style="width:100%; margin-bottom:10px; display:flex; align-items:center; gap:16px;">
+                        <span style="font-size:24px;">📖</span> Read 30 mins
+                    </button>
+                    <button class="habit-card" onclick="addCommonHabit('Exercise 🏋️')"
+                        style="width:100%; margin-bottom:10px; display:flex; align-items:center; gap:16px;">
+                        <span style="font-size:24px;">🏋️</span> Exercise
+                    </button>
+                    <button class="habit-card" onclick="addCommonHabit('Meditate 🧘')"
+                        style="width:100%; margin-bottom:10px; display:flex; align-items:center; gap:16px;">
+                        <span style="font-size:24px;">🧘</span> Meditate
+                    </button>
+                    <button class="habit-card" onclick="addCommonHabit('Sleep 8h 😴')"
+                        style="width:100%; margin-bottom:10px; display:flex; align-items:center; gap:16px;">
+                        <span style="font-size:24px;">😴</span> Sleep 8h
+                    </button>
+                    <button class="habit-card" onclick="createHabit()"
+                        style="width:100%; background:var(--primary); color:white; display:flex; justify-content:center; gap:8px;">
+                        <ion-icon name="add-circle"></ion-icon> Create Custom
+                    </button>
                 </div>
             </div>
         </div>
